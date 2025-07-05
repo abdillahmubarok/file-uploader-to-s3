@@ -2,7 +2,7 @@
 
 import type { S3File } from "@/app/actions";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Button } from "./button";
+import { Button } from "@/components/ui/button";
 import { Download, ExternalLink } from "lucide-react";
 
 interface PreviewModalProps {
