@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileUploader } from "@/components/file-uploader";
 import { AuthModal } from "@/components/auth-modal";
@@ -94,7 +95,7 @@ export default function Home() {
         <FileGallery files={galleryFiles} isLoading={isLoadingFiles} />
         
         <footer className="mt-8 text-center text-sm text-muted-foreground">
-          <p>Built with love for all the lecturers out there.</p>
+          <p>Made with &#x2665; by <Link href="https://github.com/abdillahmubarok" target="_blank">Muhammad Abdillah Mubarok</Link></p>
         </footer>
       </div>
     </main>
