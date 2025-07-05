@@ -198,7 +198,7 @@ export function FileUploader() {
             Drag & drop files here, or click to select files
           </p>
           <p className="text-sm">
-            Any file type is accepted, up to 100MB.
+            Any file type is accepted, up to 10GB.
           </p>
         </div>
       </div>
