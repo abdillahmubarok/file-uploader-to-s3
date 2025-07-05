@@ -37,7 +37,7 @@ const getFileIcon = (fileType: string) => {
   return <FileIcon className="w-8 h-8 text-primary" />;
 };
 
-export function FileUploader() {
+export function FileUploader({ onUploadSuccess }: { onUploadSuccess?: () => void }) {
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const { toast } = useToast();
@@ -159,6 +159,7 @@ export function FileUploader() {
             title: "Upload Successful",
             description: `${file.name} has been uploaded.`,
           });
+        onUploadSuccess?.();
       } else {
         handleUploadError();
       }
