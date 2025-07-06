@@ -219,7 +219,7 @@ export async function getShareableLink(path: string, expiresIn: number = 3600): 
     }
 
     if (expiresIn <= 0 || expiresIn > 604800) { // Max 7 days
-        return { failure: "Expiration time must be between 1 second and 7 days." };
+        expiresIn = 3600; // Default to 1 hour if invalid
     }
 
     const client = new S3Client({
@@ -248,9 +248,14 @@ export async function createMaskedShareableLink(path: string, expiresIn: number)
     if (!process.env.URL_ENCRYPTION_SECRET && process.env.NODE_ENV !== 'development') {
         return { failure: "URL encryption is not configured on the server." };
     }
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+    let appUrl = process.env.NEXT_PUBLIC_APP_URL;
     if (!appUrl) {
         return { failure: "NEXT_PUBLIC_APP_URL environment variable is not set." };
+    }
+
+    // Sanitize the URL to remove any trailing slashes
+    if (appUrl.endsWith('/')) {
+        appUrl = appUrl.slice(0, -1);
     }
 
     try {
