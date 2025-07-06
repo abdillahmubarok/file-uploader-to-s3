@@ -1,61 +1,36 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileUploader } from "@/components/file-uploader";
 import { AuthModal } from "@/components/auth-modal";
 import { Skeleton } from "@/components/ui/skeleton";
-import { FileGallery } from "@/components/file-gallery";
-import { listFiles, S3File } from "@/app/actions";
-import { useToast } from "@/hooks/use-toast";
-import { Separator } from "@/components/ui/separator";
 
 const AUTH_KEY = "pakde-dosen-auth-v1";
 
 export default function Home() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAuthChecked, setIsAuthChecked] = useState(false);
-  const [galleryFiles, setGalleryFiles] = useState<S3File[]>([]);
-  const [isLoadingFiles, setIsLoadingFiles] = useState(true);
-  const { toast } = useToast();
-
-  const fetchFiles = useCallback(async () => {
-    setIsLoadingFiles(true);
-    const result = await listFiles();
-    if (result.success) {
-      setGalleryFiles(result.success);
-    } else {
-      toast({
-        title: "Error fetching files",
-        description: result.failure,
-        variant: "destructive",
-      });
-      setGalleryFiles([]);
-    }
-    setIsLoadingFiles(false);
-  }, [toast]);
 
   useEffect(() => {
     // Check for auth status in localStorage only on the client
     const authStatus = localStorage.getItem(AUTH_KEY);
     if (authStatus === "true") {
       setIsAuthenticated(true);
-      fetchFiles();
     }
     setIsAuthChecked(true);
-  }, [fetchFiles]);
+  }, []);
 
   const handleAuthenticated = () => {
     localStorage.setItem(AUTH_KEY, "true");
     setIsAuthenticated(true);
-    fetchFiles();
   };
 
   if (!isAuthChecked) {
     // Show a loading/skeleton state while checking auth
     return (
-        <main className="flex min-h-screen w-full flex-col items-center justify-center bg-background p-4">
+        <main className="container mx-auto flex min-h-[calc(100vh-4rem)] flex-col items-center justify-center p-4">
             <div className="w-full max-w-2xl">
               <Card className="shadow-lg border-2">
                 <CardHeader className="text-center">
@@ -76,7 +51,7 @@ export default function Home() {
   }
 
   return (
-    <main className="flex min-h-screen w-full flex-col items-center bg-background p-4 md:p-8">
+    <main className="container mx-auto flex min-h-[calc(100vh-4rem)] w-full flex-col items-center p-4 md:p-8">
       <div className="w-full max-w-6xl">
         <Card className="shadow-lg border-2">
           <CardHeader className="text-center">
@@ -86,13 +61,9 @@ export default function Home() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <FileUploader onUploadSuccess={fetchFiles} />
+            <FileUploader onUploadSuccess={() => {}} />
           </CardContent>
         </Card>
-        
-        <Separator className="my-8" />
-        
-        <FileGallery files={galleryFiles} isLoading={isLoadingFiles} onRefresh={fetchFiles} />
         
         <footer className="mt-8 text-center text-sm text-muted-foreground">
           <p>Made with &#x2665; by <Link href="https://github.com/abdillahmubarok" target="_blank">Muhammad Abdillah Mubarok</Link></p>

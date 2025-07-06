@@ -1,6 +1,7 @@
 import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
+import { MainNav } from '@/components/main-nav';
 
 export const metadata: Metadata = {
   title: 'Pakde Dosen Uploader',
@@ -20,6 +21,7 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Inter&display=swap" rel="stylesheet"></link>
       </head>
       <body className="font-body antialiased">
+        <MainNav />
         {children}
         <Toaster />
       </body>

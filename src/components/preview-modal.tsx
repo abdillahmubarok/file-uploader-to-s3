@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { S3File } from "@/app/actions";
+import type { S3Item } from "@/app/actions";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Download, ExternalLink, Loader2, Trash2 } from "lucide-react";
@@ -16,12 +16,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { deleteFile } from "@/app/actions";
+import { deleteItem } from "@/app/actions";
 import { useToast } from "@/hooks/use-toast";
 
 
 interface PreviewModalProps {
-  file: S3File | null;
+  file: S3Item | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onDelete: () => void;
@@ -38,7 +38,7 @@ export function PreviewModal({ file, open, onOpenChange, onDelete }: PreviewModa
   const handleDelete = async () => {
     if (!file) return;
     setIsDeleting(true);
-    const result = await deleteFile(file.path);
+    const result = await deleteItem(file.path, file.isFolder);
     if (result.success) {
       toast({
         title: "File Deleted",
@@ -55,25 +55,26 @@ export function PreviewModal({ file, open, onOpenChange, onDelete }: PreviewModa
     setIsDeleting(false);
   };
 
+  const fileUrl = file.url!;
   const fileType = file.type.split('/')[0];
   const isPdf = file.type === 'application/pdf';
 
   const renderContent = () => {
     if (fileType === 'image') {
-      return <img src={file.url} alt={file.name} className="max-w-full max-h-[75vh] object-contain mx-auto" />;
+      return <img src={fileUrl} alt={file.name} className="max-w-full max-h-[75vh] object-contain mx-auto" />;
     }
     if (fileType === 'video') {
-      return <video controls autoPlay src={file.url} className="w-full max-h-[75vh]" />;
+      return <video controls autoPlay src={fileUrl} className="w-full max-h-[75vh]" />;
     }
     if (isPdf) {
-      return <iframe src={file.url} className="w-full h-[75vh] border-0" title={file.name} />;
+      return <iframe src={fileUrl} className="w-full h-[75vh] border-0" title={file.name} />;
     }
     return (
       <div className="text-center py-10 bg-muted rounded-lg">
         <p className="text-lg font-semibold">No preview available for this file type.</p>
         <p className="text-muted-foreground mb-4">{file.name}</p>
         <Button asChild>
-          <a href={file.url} download={file.name}>
+          <a href={fileUrl} download={file.name}>
             <Download className="mr-2 h-4 w-4" />
             Download File
           </a>
@@ -118,14 +119,14 @@ export function PreviewModal({ file, open, onOpenChange, onDelete }: PreviewModa
               </AlertDialogContent>
             </AlertDialog>
             <Button variant="ghost" asChild>
-              <a href={file.url} target="_blank" rel="noopener noreferrer">
+              <a href={fileUrl} target="_blank" rel="noopener noreferrer">
                 Open in New Tab
                 <ExternalLink className="ml-2 h-4 w-4" />
               </a>
             </Button>
           </div>
           <Button asChild>
-            <a href={file.url} download={file.name}>
+            <a href={fileUrl} download={file.name}>
                 <Download className="mr-2 h-4 w-4" />
                 Download
             </a>
