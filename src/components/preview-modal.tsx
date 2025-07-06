@@ -1,10 +1,11 @@
+
 "use client";
 
 import { useState } from "react";
 import type { S3Item } from "@/app/actions";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Download, ExternalLink, Loader2, Trash2 } from "lucide-react";
+import { Download, ExternalLink, Loader2, Trash2, FileText } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -57,22 +58,21 @@ export function PreviewModal({ file, open, onOpenChange, onDelete }: PreviewModa
 
   const fileUrl = file.url!;
   const fileType = file.type.split('/')[0];
-  const isPdf = file.type === 'application/pdf';
 
   const renderContent = () => {
     if (fileType === 'image') {
-      return <img src={fileUrl} alt={file.name} className="max-w-full max-h-[75vh] object-contain mx-auto" />;
+      return <img src={fileUrl} alt={file.name} className="max-w-full max-h-full object-contain" />;
     }
     if (fileType === 'video') {
-      return <video controls autoPlay src={fileUrl} className="w-full max-h-[75vh]" />;
+      return <video controls autoPlay src={fileUrl} className="w-full max-h-full object-contain" />;
     }
-    if (isPdf) {
-      return <iframe src={fileUrl} className="w-full h-[75vh] border-0" title={file.name} />;
-    }
+    
+    // Fallback for PDFs and other document types
     return (
-      <div className="text-center py-10 bg-muted rounded-lg">
-        <p className="text-lg font-semibold">No preview available for this file type.</p>
-        <p className="text-muted-foreground mb-4">{file.name}</p>
+      <div className="text-center p-6 flex flex-col items-center justify-center h-full bg-background sm:bg-muted sm:rounded-lg">
+        <FileText className="w-20 h-20 text-muted-foreground mb-4" />
+        <p className="text-xl font-semibold mb-2">No preview available</p>
+        <p className="text-sm text-muted-foreground mb-6 max-w-xs sm:max-w-sm truncate" title={file.name}>{file.name}</p>
         <Button asChild>
           <a href={fileUrl} download={file.name}>
             <Download className="mr-2 h-4 w-4" />
@@ -85,19 +85,21 @@ export function PreviewModal({ file, open, onOpenChange, onDelete }: PreviewModa
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl w-full h-auto max-h-[90vh] flex flex-col p-2 sm:p-6">
-        <DialogHeader>
-          <DialogTitle className="truncate pr-12">{file.name}</DialogTitle>
+      <DialogContent className="sm:max-w-6xl w-full h-full sm:h-auto sm:max-h-[90vh] flex flex-col p-0 sm:p-4 data-[state=open]:sm:animate-in data-[state=closed]:sm:animate-out sm:rounded-lg">
+        <DialogHeader className="p-4 border-b sm:p-2 sm:border-0">
+          <DialogTitle className="truncate pr-10 sm:pr-12">{file.name}</DialogTitle>
           <DialogDescription className="truncate">{file.path}</DialogDescription>
         </DialogHeader>
-        <div className="flex-grow flex items-center justify-center overflow-auto my-4 bg-black/10 dark:bg-black/40 rounded-md">
+        
+        <div className="flex-grow flex items-center justify-center overflow-auto bg-background sm:bg-black/10 sm:dark:bg-black/40 sm:rounded-md">
             {renderContent()}
         </div>
-        <DialogFooter className="flex-col sm:flex-row sm:justify-between pt-4 border-t gap-2">
+        
+        <DialogFooter className="flex-col-reverse sm:flex-row sm:justify-between p-4 border-t gap-2 sm:p-2 sm:border-0">
             <div className="flex items-center gap-2">
                 <AlertDialog>
                 <AlertDialogTrigger asChild>
-                    <Button variant="destructive" disabled={isDeleting} className="w-full sm:w-auto">
+                    <Button variant="destructive" disabled={isDeleting} className="w-full justify-center sm:w-auto">
                     {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
                     Delete
                     </Button>
@@ -118,14 +120,14 @@ export function PreviewModal({ file, open, onOpenChange, onDelete }: PreviewModa
                     </AlertDialogFooter>
                 </AlertDialogContent>
                 </AlertDialog>
-                <Button variant="ghost" asChild>
+                <Button variant="ghost" asChild className="w-full justify-center sm:w-auto">
                 <a href={fileUrl} target="_blank" rel="noopener noreferrer">
                     <ExternalLink className="mr-2 h-4 w-4" />
-                    <span className="hidden sm:inline">New Tab</span>
+                    <span>New Tab</span>
                 </a>
                 </Button>
             </div>
-            <Button asChild className="w-full sm:w-auto">
+            <Button asChild className="w-full justify-center sm:w-auto">
                 <a href={fileUrl} download={file.name}>
                     <Download className="mr-2 h-4 w-4" />
                     Download
