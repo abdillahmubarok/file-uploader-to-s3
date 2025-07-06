@@ -1,3 +1,4 @@
+
 "use server";
 
 import { createPresignedPost } from "@aws-sdk/s3-presigned-post";
@@ -71,11 +72,15 @@ export async function listFiles(path: string = ""): Promise<{ success?: S3Item[]
     if (!process.env.AWS_BUCKET) {
       return { failure: "AWS_BUCKET environment variable not set." };
     }
+    if (!process.env.AWS_ACCESS_KEY_ID || !process.env.AWS_SECRET_ACCESS_KEY) {
+      return { failure: "AWS credentials are not configured on the server." };
+    }
+    
     const client = new S3Client({
       region: process.env.AWS_DEFAULT_REGION ?? "ap-southeast-3",
       credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
       },
     });
   
@@ -146,11 +151,15 @@ export async function createFolder(path: string): Promise<{ success?: boolean; f
     if (!process.env.AWS_BUCKET) {
       return { failure: "AWS_BUCKET environment variable not set." };
     }
+    if (!process.env.AWS_ACCESS_KEY_ID || !process.env.AWS_SECRET_ACCESS_KEY) {
+      return { failure: "AWS credentials are not configured on the server." };
+    }
+
     const client = new S3Client({
         region: process.env.AWS_DEFAULT_REGION ?? "ap-southeast-3",
         credentials: {
-          accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-          secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+          accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+          secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
         },
       });
 
@@ -172,11 +181,15 @@ export async function deleteItem(path: string, isFolder: boolean): Promise<{ suc
     if (!process.env.AWS_BUCKET) {
         return { failure: "AWS_BUCKET environment variable not set." };
     }
+    if (!process.env.AWS_ACCESS_KEY_ID || !process.env.AWS_SECRET_ACCESS_KEY) {
+      return { failure: "AWS credentials are not configured on the server." };
+    }
+
     const client = new S3Client({
         region: process.env.AWS_DEFAULT_REGION ?? "ap-southeast-3",
         credentials: {
-          accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-          secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+          accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+          secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
         },
     });
 
@@ -216,6 +229,9 @@ export async function getShareableLink(path: string, expiresIn: number = 3600): 
     if (!process.env.AWS_BUCKET) {
       return { failure: "AWS_BUCKET environment variable not set." };
     }
+    if (!process.env.AWS_ACCESS_KEY_ID || !process.env.AWS_SECRET_ACCESS_KEY) {
+        return { failure: "AWS credentials are not configured on the server." };
+    }
 
     if (expiresIn <= 0 || expiresIn > 604800) { // Max 7 days
         expiresIn = 3600; // Default to 1 hour if invalid
@@ -224,8 +240,8 @@ export async function getShareableLink(path: string, expiresIn: number = 3600): 
     const client = new S3Client({
         region: process.env.AWS_DEFAULT_REGION ?? "ap-southeast-3",
         credentials: {
-          accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-          secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+          accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+          secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
         },
     });
 
