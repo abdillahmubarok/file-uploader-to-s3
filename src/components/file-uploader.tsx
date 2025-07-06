@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, type DragEvent, type ChangeEvent } from "react";
+import { useState, useRef, type DragEvent, type ChangeEvent, useEffect, useCallback } from "react";
 import {
   UploadCloud,
   File as FileIcon,
@@ -9,6 +9,7 @@ import {
   FileImage,
   FileVideo,
   FileText,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -31,7 +32,7 @@ const getFileIcon = (fileType: string) => {
   if (fileType.startsWith("video/")) {
     return <FileVideo className="w-8 h-8 text-primary" />;
   }
-  if (fileType.startsWith("text/")) {
+  if (fileType.startsWith("text/") || fileType === 'application/pdf') {
     return <FileText className="w-8 h-8 text-primary" />;
   }
   return <FileIcon className="w-8 h-8 text-primary" />;
@@ -43,7 +44,7 @@ export function FileUploader({ onUploadSuccess }: { onUploadSuccess?: () => void
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const processFiles = (fileList: FileList | null) => {
+  const processFiles = useCallback((fileList: FileList | null) => {
     if (!fileList || fileList.length === 0) return;
     
     const newFiles = Array.from(fileList).map((file) => ({
@@ -54,8 +55,7 @@ export function FileUploader({ onUploadSuccess }: { onUploadSuccess?: () => void
     }));
     
     setFiles((prevFiles) => [...prevFiles, ...newFiles]);
-    newFiles.forEach(uploadFile);
-  };
+  }, []);
 
   const onFileSelect = (e: ChangeEvent<HTMLInputElement>) => {
     processFiles(e.target.files);
@@ -121,12 +121,15 @@ export function FileUploader({ onUploadSuccess }: { onUploadSuccess?: () => void
     formData.append("file", file);
 
     const xhr = new XMLHttpRequest();
-    const newFiles = [...files];
-    const currentFile = newFiles.find(f => f.id === uploadedFile.id);
-    if (currentFile) {
-        currentFile.source = xhr;
-    }
-    setFiles(newFiles);
+    
+    setFiles(prev => {
+        const newFiles = [...prev];
+        const currentFile = newFiles.find(f => f.id === uploadedFile.id);
+        if (currentFile) {
+            currentFile.source = xhr;
+        }
+        return newFiles;
+    });
 
     xhr.open("POST", url, true);
 
@@ -155,10 +158,6 @@ export function FileUploader({ onUploadSuccess }: { onUploadSuccess?: () => void
         setFiles((prev) =>
           prev.map((f) => (f.id === uploadedFile.id ? { ...f, status: "success", progress: 100 } : f))
         );
-        toast({
-            title: "Upload Successful",
-            description: `${file.name} has been uploaded.`,
-          });
         onUploadSuccess?.();
       } else {
         handleUploadError();
@@ -171,13 +170,48 @@ export function FileUploader({ onUploadSuccess }: { onUploadSuccess?: () => void
 
     xhr.send(formData);
   };
+  
+  const handleUploadAll = () => {
+    files.forEach(f => {
+      if (f.status === 'pending') {
+        uploadFile(f);
+      }
+    });
+  };
 
-  const cancelUpload = (fileToCancel: UploadedFile) => {
-    fileToCancel.source?.abort();
+  const removeFile = (fileToRemove: UploadedFile) => {
+    fileToRemove.source?.abort();
     setFiles((prevFiles) =>
-      prevFiles.filter((f) => f.id !== fileToCancel.id)
+      prevFiles.filter((f) => f.id !== fileToRemove.id)
     );
   };
+
+  const clearAllFiles = () => {
+    files.forEach(f => f.source?.abort());
+    setFiles([]);
+  };
+
+  useEffect(() => {
+    const isUploading = files.some((f) => f.status === "uploading");
+
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+
+    if (isUploading) {
+      window.addEventListener("beforeunload", handleBeforeUnload);
+    } else {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    }
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [files]);
+  
+  const hasPendingFiles = files.some(f => f.status === 'pending');
+  const isUploading = files.some(f => f.status === 'uploading');
 
   return (
     <div className="w-full">
@@ -206,12 +240,15 @@ export function FileUploader({ onUploadSuccess }: { onUploadSuccess?: () => void
 
       {files.length > 0 && (
         <div className="mt-6 space-y-4">
-            <div className="flex justify-between items-center">
-                <h3 className="text-lg font-medium text-foreground">Uploads</h3>
-                <Button variant="link" size="sm" onClick={() => {
-                  files.forEach(f => f.source?.abort());
-                  setFiles([]);
-                }}>Clear All</Button>
+            <div className="flex justify-between items-center gap-4">
+                <h3 className="text-lg font-medium text-foreground">Upload Queue</h3>
+                <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={clearAllFiles}>Clear All</Button>
+                    <Button size="sm" onClick={handleUploadAll} disabled={!hasPendingFiles || isUploading}>
+                        {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UploadCloud className="mr-2 h-4 w-4" />}
+                        {isUploading ? "Uploading..." : "Upload All"}
+                    </Button>
+                </div>
             </div>
           {files.map((uploadedFile) => (
             <div
@@ -221,7 +258,7 @@ export function FileUploader({ onUploadSuccess }: { onUploadSuccess?: () => void
               <div className="flex items-center gap-4 overflow-hidden">
                 {getFileIcon(uploadedFile.file.type)}
                 <div className="flex flex-col overflow-hidden">
-                    <p className="font-medium text-foreground truncate">{uploadedFile.file.name}</p>
+                    <p className="font-medium text-foreground truncate" title={uploadedFile.file.name}>{uploadedFile.file.name}</p>
                     <p className="text-sm text-muted-foreground">
                         {(uploadedFile.file.size / (1024 * 1024)).toFixed(2)} MB
                     </p>
@@ -229,21 +266,23 @@ export function FileUploader({ onUploadSuccess }: { onUploadSuccess?: () => void
               </div>
 
               <div className="flex items-center gap-4 flex-grow mx-4">
+                {uploadedFile.status === "pending" && (
+                  <p className="text-sm text-muted-foreground">Pending upload</p>
+                )}
                 {(uploadedFile.status === "uploading" || uploadedFile.status === 'success') && <Progress value={uploadedFile.progress} className="flex-1" />}
+                {uploadedFile.status === "error" && (
+                    <p className="text-sm text-destructive">Upload failed</p>
+                )}
               </div>
 
               <div className="shrink-0 w-10 h-10 flex items-center justify-center">
-                {uploadedFile.status === "uploading" && (
-                  <Button variant="ghost" size="icon" onClick={() => cancelUpload(uploadedFile)}>
+                {uploadedFile.status !== "success" && (
+                  <Button variant="ghost" size="icon" onClick={() => removeFile(uploadedFile)}>
                     <X className="h-5 w-5" />
+                    <span className="sr-only">Remove file</span>
                   </Button>
                 )}
                 {uploadedFile.status === "success" && <CheckCircle2 className="h-6 w-6 text-green-600" />}
-                {uploadedFile.status === "error" && (
-                   <Button variant="ghost" size="icon" onClick={() => cancelUpload(uploadedFile)}>
-                      <X className="h-5 w-5 text-destructive" />
-                  </Button>
-                )}
               </div>
             </div>
           ))}
