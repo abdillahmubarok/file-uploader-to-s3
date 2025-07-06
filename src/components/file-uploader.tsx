@@ -38,7 +38,7 @@ const getFileIcon = (fileType: string) => {
   return <FileIcon className="w-8 h-8 text-primary" />;
 };
 
-export function FileUploader({ onUploadSuccess }: { onUploadSuccess?: () => void }) {
+export function FileUploader({ onUploadSuccess, uploadPath = "" }: { onUploadSuccess?: () => void, uploadPath?: string }) {
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const { toast } = useToast();
@@ -96,7 +96,7 @@ export function FileUploader({ onUploadSuccess }: { onUploadSuccess?: () => void
       name: file.name,
       type: file.type,
       size: file.size,
-    });
+    }, uploadPath);
 
     if (signedURLResult.failure) {
       toast({
@@ -229,7 +229,7 @@ export function FileUploader({ onUploadSuccess }: { onUploadSuccess?: () => void
         <input ref={fileInputRef} onChange={onFileSelect} type="file" multiple className="hidden"/>
         <div className="flex flex-col items-center gap-4 text-muted-foreground pointer-events-none">
           <UploadCloud className="w-16 h-16 text-primary" />
-          <p className="font-semibold text-foreground">
+          <p className="font-semibold text-foreground text-lg">
             Drag & drop files here, or click to select files
           </p>
           <p className="text-sm">
@@ -241,7 +241,7 @@ export function FileUploader({ onUploadSuccess }: { onUploadSuccess?: () => void
       {files.length > 0 && (
         <div className="mt-6 space-y-4">
             <div className="flex justify-between items-center gap-4">
-                <h3 className="text-lg font-medium text-foreground">Upload Queue</h3>
+                <h3 className="text-lg font-medium text-foreground">Upload Queue ({files.length})</h3>
                 <div className="flex gap-2">
                     <Button variant="outline" size="sm" onClick={clearAllFiles}>Clear All</Button>
                     <Button size="sm" onClick={handleUploadAll} disabled={!hasPendingFiles || isUploading}>
@@ -253,7 +253,7 @@ export function FileUploader({ onUploadSuccess }: { onUploadSuccess?: () => void
           {files.map((uploadedFile) => (
             <div
               key={uploadedFile.id}
-              className="bg-card border rounded-lg p-4 flex items-center justify-between gap-4"
+              className="bg-background/50 border rounded-lg p-4 flex items-center justify-between gap-4"
             >
               <div className="flex items-center gap-4 overflow-hidden">
                 {getFileIcon(uploadedFile.file.type)}

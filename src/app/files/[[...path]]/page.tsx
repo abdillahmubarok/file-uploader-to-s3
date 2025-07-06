@@ -93,7 +93,7 @@ export default function FilesPage() {
                     Create Folder
                 </Button>
                 <Button asChild>
-                    <Link href="/">
+                    <Link href={`/?path=${currentPath}`}>
                         <FilePlus className="mr-2 h-4 w-4" />
                         Upload Files
                     </Link>

@@ -15,7 +15,7 @@ export interface S3Item {
     lastModified: Date;
 }
 
-export async function getSignedURL(file: { name: string; type: string; size: number }) {
+export async function getSignedURL(file: { name: string; type: string; size: number }, path: string = "") {
   if (!process.env.AWS_BUCKET) {
     return { failure: "AWS_BUCKET environment variable not set." };
   }
@@ -38,7 +38,7 @@ export async function getSignedURL(file: { name: string; type: string; size: num
   const extension = file.name.split('.').pop() || 'bin';
   
   const newFileName = `musringudin-record-${date}-${time}-${uniqueChars}.${extension}`;
-  const key = `pakde-dosen/${newFileName}`;
+  const key = `pakde-dosen/${path ? path + '/' : ''}${newFileName}`;
 
   try {
     const { url, fields } = await createPresignedPost(client, {
