@@ -1,20 +1,59 @@
 "use client";
 
+import { useState } from "react";
 import type { S3File } from "@/app/actions";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Download, ExternalLink } from "lucide-react";
+import { Download, ExternalLink, Loader2, Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { deleteFile } from "@/app/actions";
+import { useToast } from "@/hooks/use-toast";
+
 
 interface PreviewModalProps {
   file: S3File | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onDelete: () => void;
 }
 
-export function PreviewModal({ file, open, onOpenChange }: PreviewModalProps) {
+export function PreviewModal({ file, open, onOpenChange, onDelete }: PreviewModalProps) {
+  const [isDeleting, setIsDeleting] = useState(false);
+  const { toast } = useToast();
+
   if (!file) {
     return null;
   }
+
+  const handleDelete = async () => {
+    if (!file) return;
+    setIsDeleting(true);
+    const result = await deleteFile(file.path);
+    if (result.success) {
+      toast({
+        title: "File Deleted",
+        description: `Successfully deleted ${file.name}.`,
+      });
+      onDelete();
+    } else {
+      toast({
+        title: "Error Deleting File",
+        description: result.failure || "An unknown error occurred.",
+        variant: "destructive",
+      });
+    }
+    setIsDeleting(false);
+  };
 
   const fileType = file.type.split('/')[0];
   const isPdf = file.type === 'application/pdf';
@@ -54,12 +93,37 @@ export function PreviewModal({ file, open, onOpenChange }: PreviewModalProps) {
             {renderContent()}
         </div>
         <DialogFooter className="!justify-between flex-row pt-4 border-t">
-          <Button variant="ghost" asChild>
-            <a href={file.url} target="_blank" rel="noopener noreferrer">
-              Open in New Tab
-              <ExternalLink className="ml-2 h-4 w-4" />
-            </a>
-          </Button>
+          <div className="flex items-center gap-2">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" disabled={isDeleting}>
+                  {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                  Delete
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action cannot be undone. This will permanently delete the file <span className="font-semibold">{file.name}</span> from the server.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDelete} disabled={isDeleting}>
+                    {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Continue
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+            <Button variant="ghost" asChild>
+              <a href={file.url} target="_blank" rel="noopener noreferrer">
+                Open in New Tab
+                <ExternalLink className="ml-2 h-4 w-4" />
+              </a>
+            </Button>
+          </div>
           <Button asChild>
             <a href={file.url} download={file.name}>
                 <Download className="mr-2 h-4 w-4" />

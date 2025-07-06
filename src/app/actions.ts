@@ -1,7 +1,7 @@
 "use server";
 
 import { createPresignedPost } from "@aws-sdk/s3-presigned-post";
-import { S3Client, ListObjectsV2Command, GetObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, ListObjectsV2Command, GetObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { randomUUID } from "crypto";
 
@@ -136,5 +136,35 @@ export async function listFiles(): Promise<{ success?: S3File[], failure?: strin
     } catch (error) {
       console.error("Error listing files:", error);
       return { failure: "Could not list files from S3." };
+    }
+}
+
+export async function deleteFile(path: string): Promise<{ success?: boolean; failure?: string }> {
+    if (!process.env.AWS_BUCKET) {
+      return { failure: "AWS_BUCKET environment variable not set." };
+    }
+    if (!process.env.AWS_ACCESS_KEY_ID || !process.env.AWS_SECRET_ACCESS_KEY) {
+      return { failure: "AWS credentials not set in environment variables." };
+    }
+  
+    const client = new S3Client({
+      region: process.env.AWS_DEFAULT_REGION ?? "ap-southeast-3",
+      credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+      },
+    });
+  
+    const command = new DeleteObjectCommand({
+      Bucket: process.env.AWS_BUCKET,
+      Key: path,
+    });
+  
+    try {
+      await client.send(command);
+      return { success: true };
+    } catch (error) {
+      console.error("Error deleting file:", error);
+      return { failure: "Could not delete file from S3." };
     }
 }

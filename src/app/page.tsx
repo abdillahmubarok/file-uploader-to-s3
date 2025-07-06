@@ -92,7 +92,7 @@ export default function Home() {
         
         <Separator className="my-8" />
         
-        <FileGallery files={galleryFiles} isLoading={isLoadingFiles} />
+        <FileGallery files={galleryFiles} isLoading={isLoadingFiles} onRefresh={fetchFiles} />
         
         <footer className="mt-8 text-center text-sm text-muted-foreground">
           <p>Made with &#x2665; by <Link href="https://github.com/abdillahmubarok" target="_blank">Muhammad Abdillah Mubarok</Link></p>
