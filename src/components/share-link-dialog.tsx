@@ -20,7 +20,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { getShareableLink, S3Item } from "@/app/actions";
+import { createMaskedShareableLink, S3Item } from "@/app/actions";
 import { Loader2, Copy, Check } from "lucide-react";
 import { Label } from "@/components/ui/label";
 
@@ -69,7 +69,7 @@ export function ShareLinkDialog({ item, open, onOpenChange }: ShareLinkDialogPro
         setIsLoading(true);
         setGeneratedUrl(null);
         setIsCopied(false);
-        const result = await getShareableLink(item.path, expiration);
+        const result = await createMaskedShareableLink(item.path, expiration);
         if (result.success) {
             setGeneratedUrl(result.success.url);
         } else {

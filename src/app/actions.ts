@@ -5,6 +5,7 @@ import { createPresignedPost } from "@aws-sdk/s3-presigned-post";
 import { S3Client, ListObjectsV2Command, GetObjectCommand, DeleteObjectCommand, PutObjectCommand, DeleteObjectsCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { randomUUID } from "crypto";
+import { encrypt } from "@/lib/crypto";
 
 export interface S3Item {
     name: string;
@@ -240,5 +241,28 @@ export async function getShareableLink(path: string, expiresIn: number = 3600): 
     } catch (error) {
         console.error("Error getting shareable link:", error);
         return { failure: "Could not create shareable link." };
+    }
+}
+
+export async function createMaskedShareableLink(path: string, expiresIn: number): Promise<{ success?: { url: string }; failure?: string }> {
+    if (!process.env.URL_ENCRYPTION_SECRET && process.env.NODE_ENV !== 'development') {
+        return { failure: "URL encryption is not configured on the server." };
+    }
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+    if (!appUrl) {
+        return { failure: "NEXT_PUBLIC_APP_URL environment variable is not set." };
+    }
+
+    try {
+        const expiresAt = Date.now() + expiresIn * 1000;
+        const payload = JSON.stringify({ path, expiresAt });
+        const encryptedPayload = encrypt(payload);
+        
+        const url = `${appUrl}/share/${encryptedPayload}`;
+        
+        return { success: { url } };
+    } catch (error) {
+        console.error("Error creating masked shareable link:", error);
+        return { failure: "Could not create masked shareable link." };
     }
 }
