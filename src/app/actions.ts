@@ -31,14 +31,7 @@ export async function getSignedURL(file: { name: string; type: string; size: num
     },
   });
 
-  const now = new Date();
-  const date = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Jakarta' }).format(now).replace(/-/g, '');
-  const time = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Jakarta', hour12: false }).format(now).replace(/:/g, '');
-  const uniqueChars = randomUUID().substring(0, 3);
-  const extension = file.name.split('.').pop() || 'bin';
-  
-  const newFileName = `musringudin-record-${date}-${time}-${uniqueChars}.${extension}`;
-  const key = `pakde-dosen/${path ? path + '/' : ''}${newFileName}`;
+  const key = `pakde-dosen/${path ? path + '/' : ''}${file.name}`;
 
   try {
     const { url, fields } = await createPresignedPost(client, {
