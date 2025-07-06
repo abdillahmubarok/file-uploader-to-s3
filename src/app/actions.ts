@@ -1,4 +1,3 @@
-
 "use server";
 
 import { createPresignedPost } from "@aws-sdk/s3-presigned-post";
@@ -245,29 +244,125 @@ export async function getShareableLink(path: string, expiresIn: number = 3600): 
 }
 
 export async function createMaskedShareableLink(path: string, expiresIn: number): Promise<{ success?: { url: string }; failure?: string }> {
-    if (!process.env.URL_ENCRYPTION_SECRET && process.env.NODE_ENV !== 'development') {
-        return { failure: "URL encryption is not configured on the server." };
-    }
-    let appUrl = process.env.NEXT_PUBLIC_APP_URL;
-    if (!appUrl) {
-        return { failure: "NEXT_PUBLIC_APP_URL environment variable is not set." };
+    console.log('🔗 Creating masked shareable link for:', path);
+    
+    // Check environment variables with detailed logging
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+    const encryptionSecret = process.env.URL_ENCRYPTION_SECRET;
+    const nodeEnv = process.env.NODE_ENV;
+    
+    console.log('🌍 Environment check:', {
+        hasAppUrl: !!appUrl,
+        appUrl: appUrl ? `${appUrl.substring(0, 20)}...` : 'NOT_SET',
+        hasEncryptionSecret: !!encryptionSecret,
+        encryptionSecretLength: encryptionSecret?.length || 0,
+        nodeEnv
+    });
+
+    // Validate encryption secret
+    if (!encryptionSecret && nodeEnv !== 'development') {
+        console.error('❌ URL_ENCRYPTION_SECRET is not configured for production');
+        return { failure: "URL encryption is not configured on the server. Please set URL_ENCRYPTION_SECRET in environment variables." };
     }
 
-    // Sanitize the URL to remove any trailing slashes
-    if (appUrl.endsWith('/')) {
-        appUrl = appUrl.slice(0, -1);
+    // Validate app URL
+    if (!appUrl) {
+        console.error('❌ NEXT_PUBLIC_APP_URL is not set');
+        return { failure: "App URL is not configured. Please set NEXT_PUBLIC_APP_URL in environment variables." };
+    }
+
+    // Validate encryption secret format
+    if (encryptionSecret && nodeEnv !== 'development') {
+        try {
+            const keyBuffer = Buffer.from(encryptionSecret, 'hex');
+            if (keyBuffer.length !== 32) {
+                console.error('❌ URL_ENCRYPTION_SECRET must be exactly 64 hex characters (32 bytes)');
+                return { failure: "URL encryption key has invalid format. Must be 64 hex characters." };
+            }
+        } catch (error) {
+            console.error('❌ URL_ENCRYPTION_SECRET is not valid hex:', error);
+            return { failure: "URL encryption key has invalid format. Must be valid hex string." };
+        }
+    }
+
+    // Sanitize the URL
+    let cleanAppUrl = appUrl;
+    if (cleanAppUrl.endsWith('/')) {
+        cleanAppUrl = cleanAppUrl.slice(0, -1);
     }
 
     try {
         const expiresAt = Date.now() + expiresIn * 1000;
         const payload = JSON.stringify({ path, expiresAt });
+        
+        console.log('🔐 Encrypting payload:', {
+            payloadLength: payload.length,
+            expiresAt: new Date(expiresAt).toISOString()
+        });
+        
         const encryptedPayload = encrypt(payload);
+        console.log('✅ Encryption successful, payload length:', encryptedPayload.length);
         
-        const url = `${appUrl}/share/${encryptedPayload}`;
+        const finalUrl = `${cleanAppUrl}/share/${encryptedPayload}`;
+        console.log('🎉 Generated masked link successfully');
         
-        return { success: { url } };
+        return { success: { url: finalUrl } };
     } catch (error) {
-        console.error("Error creating masked shareable link:", error);
-        return { failure: "Could not create masked shareable link." };
+        console.error("❌ Error creating masked shareable link:", error);
+        
+        // More specific error messages
+        if (error instanceof Error) {
+            if (error.message.includes('URL_ENCRYPTION_SECRET')) {
+                return { failure: `Encryption configuration error: ${error.message}` };
+            }
+            if (error.message.includes('Encryption failed')) {
+                return { failure: `Encryption failed: ${error.message}` };
+            }
+        }
+        
+        return { failure: `Could not create masked shareable link: ${error instanceof Error ? error.message : 'Unknown error'}` };
     }
+}
+
+// Helper function to validate environment setup (can be called from a separate API route for debugging)
+export async function validateEnvironment(): Promise<{ success: boolean; details: Record<string, any> }> {
+    const details: Record<string, any> = {
+        NODE_ENV: process.env.NODE_ENV,
+        hasAppUrl: !!process.env.NEXT_PUBLIC_APP_URL,
+        appUrl: process.env.NEXT_PUBLIC_APP_URL,
+        hasEncryptionSecret: !!process.env.URL_ENCRYPTION_SECRET,
+        encryptionSecretLength: process.env.URL_ENCRYPTION_SECRET?.length || 0,
+        hasAwsBucket: !!process.env.AWS_BUCKET,
+        hasAwsAccessKey: !!process.env.AWS_ACCESS_KEY_ID,
+        hasAwsSecretKey: !!process.env.AWS_SECRET_ACCESS_KEY,
+    };
+
+    let success = true;
+    const errors: string[] = [];
+
+    if (!process.env.NEXT_PUBLIC_APP_URL) {
+        success = false;
+        errors.push('NEXT_PUBLIC_APP_URL is not set');
+    }
+
+    if (!process.env.URL_ENCRYPTION_SECRET && process.env.NODE_ENV !== 'development') {
+        success = false;
+        errors.push('URL_ENCRYPTION_SECRET is not set for production');
+    }
+
+    if (process.env.URL_ENCRYPTION_SECRET && process.env.NODE_ENV !== 'development') {
+        try {
+            const keyBuffer = Buffer.from(process.env.URL_ENCRYPTION_SECRET, 'hex');
+            if (keyBuffer.length !== 32) {
+                success = false;
+                errors.push('URL_ENCRYPTION_SECRET must be exactly 64 hex characters');
+            }
+        } catch (error) {
+            success = false;
+            errors.push('URL_ENCRYPTION_SECRET must be valid hex string');
+        }
+    }
+
+    details.errors = errors;
+    return { success, details };
 }
