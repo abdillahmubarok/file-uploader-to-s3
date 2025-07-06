@@ -1,3 +1,4 @@
+
 "use server";
 
 import { createPresignedPost } from "@aws-sdk/s3-presigned-post";
@@ -229,7 +230,7 @@ export async function getShareableLink(path: string): Promise<{ success?: { url:
     });
 
     try {
-        const url = await getSignedUrl(client, command, { expiresIn: 60 * 60 * 24 * 7 }); // 7 days
+        const url = await getSignedUrl(client, command, { expiresIn: 3600 }); // Link expires in 1 hour
         return { success: { url } };
     } catch (error) {
         console.error("Error getting shareable link:", error);
