@@ -4,6 +4,8 @@ import { decrypt } from '@/lib/crypto';
 import { getShareableLink } from '@/app/actions';
 import { AlertCircle, Clock } from 'lucide-react';
 
+export const runtime = 'nodejs'; // Force Node.js runtime for crypto module compatibility
+
 interface SharePageProps {
   params: {
     payload: string;

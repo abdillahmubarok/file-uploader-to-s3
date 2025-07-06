@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -12,6 +13,8 @@ import { FilePlus, FolderPlus } from "lucide-react";
 import { FileDataTable } from "@/components/file-data-table";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { CreateFolderDialog } from "@/components/create-folder-dialog";
+
+export const runtime = 'nodejs';
 
 const AUTH_KEY = "pakde-dosen-auth-v1";
 
