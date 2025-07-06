@@ -145,7 +145,7 @@ export function FileDataTable({ data, onActionSuccess }: FileDataTableProps) {
                     onClick={() => handleRowClick(item)}
                 >
                   <TableCell>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 sm:gap-3">
                         {getFileIcon(item)}
                         <span className="font-medium truncate">{item.name}</span>
                     </div>

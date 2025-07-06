@@ -217,7 +217,7 @@ export function FileUploader({ onUploadSuccess, uploadPath = "" }: { onUploadSuc
     <div className="w-full">
       <div
         className={cn(
-          "border-2 border-dashed border-muted-foreground/50 rounded-lg p-8 w-full text-center cursor-pointer transition-colors duration-300",
+          "border-2 border-dashed border-muted-foreground/50 rounded-lg p-6 sm:p-8 w-full text-center cursor-pointer transition-colors duration-300",
           isDragging ? "bg-accent/20 border-primary" : "hover:bg-accent/10"
         )}
         onDragEnter={handleDragEnter}
@@ -228,21 +228,21 @@ export function FileUploader({ onUploadSuccess, uploadPath = "" }: { onUploadSuc
       >
         <input ref={fileInputRef} onChange={onFileSelect} type="file" multiple className="hidden"/>
         <div className="flex flex-col items-center gap-4 text-muted-foreground pointer-events-none">
-          <UploadCloud className="w-16 h-16 text-primary" />
-          <p className="font-semibold text-foreground text-lg">
+          <UploadCloud className="w-12 h-12 sm:w-16 sm:h-16 text-primary" />
+          <p className="font-semibold text-foreground text-base sm:text-lg">
             Drag & drop files here, or click to select files
           </p>
-          <p className="text-sm">
-            Any file type is accepted, up to 10GB.
+          <p className="text-xs sm:text-sm">
+            Max file size: 10GB
           </p>
         </div>
       </div>
 
       {files.length > 0 && (
         <div className="mt-6 space-y-4">
-            <div className="flex justify-between items-center gap-4">
+            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2">
                 <h3 className="text-lg font-medium text-foreground">Upload Queue ({files.length})</h3>
-                <div className="flex gap-2">
+                <div className="flex gap-2 self-end sm:self-auto">
                     <Button variant="outline" size="sm" onClick={clearAllFiles}>Clear All</Button>
                     <Button size="sm" onClick={handleUploadAll} disabled={!hasPendingFiles || isUploading}>
                         {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UploadCloud className="mr-2 h-4 w-4" />}
@@ -253,11 +253,11 @@ export function FileUploader({ onUploadSuccess, uploadPath = "" }: { onUploadSuc
           {files.map((uploadedFile) => (
             <div
               key={uploadedFile.id}
-              className="bg-background/50 border rounded-lg p-4 flex items-center justify-between gap-4"
+              className="bg-background/50 border rounded-lg p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
             >
-              <div className="flex items-center gap-4 overflow-hidden">
+              <div className="flex items-center gap-3 flex-1 overflow-hidden">
                 {getFileIcon(uploadedFile.file.type)}
-                <div className="flex flex-col overflow-hidden">
+                <div className="flex-1 overflow-hidden">
                     <p className="font-medium text-foreground truncate" title={uploadedFile.file.name}>{uploadedFile.file.name}</p>
                     <p className="text-sm text-muted-foreground">
                         {(uploadedFile.file.size / (1024 * 1024)).toFixed(2)} MB
@@ -265,24 +265,26 @@ export function FileUploader({ onUploadSuccess, uploadPath = "" }: { onUploadSuc
                 </div>
               </div>
 
-              <div className="flex items-center gap-4 flex-grow mx-4">
-                {uploadedFile.status === "pending" && (
-                  <p className="text-sm text-muted-foreground">Pending upload</p>
-                )}
-                {(uploadedFile.status === "uploading" || uploadedFile.status === 'success') && <Progress value={uploadedFile.progress} className="flex-1" />}
-                {uploadedFile.status === "error" && (
-                    <p className="text-sm text-destructive">Upload failed</p>
-                )}
-              </div>
+              <div className="flex items-center gap-4 w-full sm:w-auto sm:max-w-xs flex-1">
+                <div className="flex-1">
+                  {uploadedFile.status === "pending" && (
+                    <p className="text-sm text-muted-foreground">Pending upload</p>
+                  )}
+                  {(uploadedFile.status === "uploading" || uploadedFile.status === 'success') && <Progress value={uploadedFile.progress} />}
+                  {uploadedFile.status === "error" && (
+                      <p className="text-sm text-destructive">Upload failed</p>
+                  )}
+                </div>
 
-              <div className="shrink-0 w-10 h-10 flex items-center justify-center">
-                {uploadedFile.status !== "success" && (
-                  <Button variant="ghost" size="icon" onClick={() => removeFile(uploadedFile)}>
-                    <X className="h-5 w-5" />
-                    <span className="sr-only">Remove file</span>
-                  </Button>
-                )}
-                {uploadedFile.status === "success" && <CheckCircle2 className="h-6 w-6 text-green-600" />}
+                <div className="shrink-0 w-10 h-10 flex items-center justify-center -mr-2 sm:-mr-1">
+                  {uploadedFile.status !== "success" && (
+                    <Button variant="ghost" size="icon" onClick={() => removeFile(uploadedFile)}>
+                      <X className="h-5 w-5" />
+                      <span className="sr-only">Remove file</span>
+                    </Button>
+                  )}
+                  {uploadedFile.status === "success" && <CheckCircle2 className="h-6 w-6 text-green-600" />}
+                </div>
               </div>
             </div>
           ))}

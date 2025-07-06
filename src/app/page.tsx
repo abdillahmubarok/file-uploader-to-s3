@@ -17,13 +17,13 @@ function UploaderPageContent() {
   const PathDisplay = () => {
     const segments = uploadPath ? uploadPath.split('/') : [];
     return (
-      <div className="flex items-center gap-2 text-muted-foreground mb-6 text-lg">
+      <div className="flex items-center gap-2 text-muted-foreground mb-6 text-lg flex-wrap">
         <Folder className="h-6 w-6 text-primary" />
         <span className="font-semibold text-foreground">Home</span>
         {segments.length > 0 && <span className="text-muted-foreground/50">/</span>}
         {segments.map((segment, index) => (
           <div key={index} className="flex items-center gap-2">
-            <span>{decodeURIComponent(segment)}</span>
+            <span className="truncate max-w-[150px] sm:max-w-none">{decodeURIComponent(segment)}</span>
             {index < segments.length - 1 && <span className="text-muted-foreground/50">/</span>}
           </div>
         ))}
@@ -35,8 +35,8 @@ function UploaderPageContent() {
     <main className="container mx-auto flex min-h-[calc(100vh-4rem)] w-full flex-col items-center justify-center p-4 md:p-8">
       <div className="w-full max-w-6xl flex flex-col items-center">
         <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold font-headline text-primary tracking-tight">File Uploader</h1>
-            <p className="text-xl text-muted-foreground mt-2">
+            <h1 className="text-3xl sm:text-4xl font-bold font-headline text-primary tracking-tight">File Uploader</h1>
+            <p className="text-lg sm:text-xl text-muted-foreground mt-2">
                 Drag and drop your files to upload them securely.
             </p>
         </div>

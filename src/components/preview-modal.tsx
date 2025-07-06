@@ -93,44 +93,44 @@ export function PreviewModal({ file, open, onOpenChange, onDelete }: PreviewModa
         <div className="flex-grow flex items-center justify-center overflow-auto my-4 bg-black/10 dark:bg-black/40 rounded-md">
             {renderContent()}
         </div>
-        <DialogFooter className="!justify-between flex-row pt-4 border-t">
-          <div className="flex items-center gap-2">
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive" disabled={isDeleting}>
-                  {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
-                  Delete
+        <DialogFooter className="flex-col sm:flex-row sm:justify-between pt-4 border-t gap-2">
+            <div className="flex items-center gap-2">
+                <AlertDialog>
+                <AlertDialogTrigger asChild>
+                    <Button variant="destructive" disabled={isDeleting} className="w-full sm:w-auto">
+                    {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                    Delete
+                    </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete the file <span className="font-semibold">{file.name}</span> from the server.
+                    </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDelete} disabled={isDeleting}>
+                        {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Continue
+                    </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+                </AlertDialog>
+                <Button variant="ghost" asChild>
+                <a href={fileUrl} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                    <span className="hidden sm:inline">New Tab</span>
+                </a>
                 </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This action cannot be undone. This will permanently delete the file <span className="font-semibold">{file.name}</span> from the server.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDelete} disabled={isDeleting}>
-                    {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Continue
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-            <Button variant="ghost" asChild>
-              <a href={fileUrl} target="_blank" rel="noopener noreferrer">
-                Open in New Tab
-                <ExternalLink className="ml-2 h-4 w-4" />
-              </a>
+            </div>
+            <Button asChild className="w-full sm:w-auto">
+                <a href={fileUrl} download={file.name}>
+                    <Download className="mr-2 h-4 w-4" />
+                    Download
+                </a>
             </Button>
-          </div>
-          <Button asChild>
-            <a href={fileUrl} download={file.name}>
-                <Download className="mr-2 h-4 w-4" />
-                Download
-            </a>
-          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

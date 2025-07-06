@@ -85,17 +85,17 @@ export default function FilesPage() {
 
   return (
     <main className="container mx-auto p-4 md:p-8">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
             <Breadcrumbs path={currentPath} />
             <div className="flex gap-2">
                 <Button variant="outline" onClick={() => setIsCreateFolderOpen(true)}>
-                    <FolderPlus className="mr-2 h-4 w-4" />
-                    Create Folder
+                    <FolderPlus className="h-4 w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Create Folder</span>
                 </Button>
                 <Button asChild>
                     <Link href={`/?path=${currentPath}`}>
-                        <FilePlus className="mr-2 h-4 w-4" />
-                        Upload Files
+                        <FilePlus className="h-4 w-4 sm:mr-2" />
+                        <span className="hidden sm:inline">Upload Files</span>
                     </Link>
                 </Button>
             </div>
