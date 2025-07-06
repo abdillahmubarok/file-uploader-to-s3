@@ -31,6 +31,28 @@ const getEncryptionKey = () => {
     throw new Error('URL_ENCRYPTION_SECRET must be set and be a 64-character hex string. Generate one with: node -e "console.log(crypto.randomBytes(32).toString(\'hex\'))"');
 }
 
+// Utility function to convert base64 to base64url
+function base64ToBase64Url(base64: string): string {
+    return base64
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=/g, '');
+}
+
+// Utility function to convert base64url to base64
+function base64UrlToBase64(base64url: string): string {
+    let base64 = base64url
+        .replace(/-/g, '+')
+        .replace(/_/g, '/');
+    
+    // Add padding if needed
+    while (base64.length % 4) {
+        base64 += '=';
+    }
+    
+    return base64;
+}
+
 export function encrypt(text: string): string {
     try {
         const key = getEncryptionKey();
@@ -43,9 +65,19 @@ export function encrypt(text: string): string {
         ]);
         
         const authTag = cipher.getAuthTag();
-        const result = Buffer.concat([iv, authTag, encrypted]).toString('base64url');
+        const result = Buffer.concat([iv, authTag, encrypted]);
         
-        return result;
+        // Use base64url encoding for URL safety
+        const base64 = result.toString('base64');
+        const base64url = base64ToBase64Url(base64);
+        
+        console.log('🔐 Encryption successful:', {
+            inputLength: text.length,
+            outputLength: base64url.length,
+            hasUrlUnsafeChars: /[+/=]/.test(base64url)
+        });
+        
+        return base64url;
     } catch (error) {
         console.error('Encryption failed:', error);
         throw new Error(`Encryption failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -53,18 +85,66 @@ export function encrypt(text: string): string {
 }
 
 export function decrypt(encryptedText: string): string | null {
+    if (!encryptedText) {
+        console.error('Decrypt: Empty encrypted text');
+        return null;
+    }
+
     try {
         const key = getEncryptionKey();
-        const data = Buffer.from(encryptedText, 'base64url');
+        
+        console.log('🔓 Attempting decryption:', {
+            inputLength: encryptedText.length,
+            hasUrlUnsafeChars: /[+/=]/.test(encryptedText)
+        });
+        
+        // Try multiple decode strategies
+        let data: Buffer | null = null;
+        let decodeMethod = '';
+        
+        // Strategy 1: Try as base64url first
+        try {
+            const base64 = base64UrlToBase64(encryptedText);
+            data = Buffer.from(base64, 'base64');
+            decodeMethod = 'base64url->base64';
+        } catch (e) {
+            console.log('Failed base64url decode, trying direct base64...');
+        }
+        
+        // Strategy 2: Try direct base64 if base64url failed
+        if (!data) {
+            try {
+                data = Buffer.from(encryptedText, 'base64');
+                decodeMethod = 'direct base64';
+            } catch (e) {
+                console.error('Failed both base64url and base64 decode');
+                return null;
+            }
+        }
+        
+        console.log('✅ Buffer decode successful:', {
+            method: decodeMethod,
+            bufferLength: data.length,
+            expectedMinLength: IV_LENGTH + TAG_LENGTH
+        });
         
         if (data.length < IV_LENGTH + TAG_LENGTH) {
-            console.error('Encrypted data is too short');
+            console.error('Encrypted data is too short:', {
+                actual: data.length,
+                minimum: IV_LENGTH + TAG_LENGTH
+            });
             return null;
         }
 
         const iv = data.subarray(0, IV_LENGTH);
         const authTag = data.subarray(IV_LENGTH, IV_LENGTH + TAG_LENGTH);
         const encrypted = data.subarray(IV_LENGTH + TAG_LENGTH);
+
+        console.log('🔧 Decryption components:', {
+            ivLength: iv.length,
+            tagLength: authTag.length,
+            encryptedLength: encrypted.length
+        });
 
         const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
         decipher.setAuthTag(authTag);
@@ -74,10 +154,49 @@ export function decrypt(encryptedText: string): string | null {
             decipher.final()
         ]);
         
-        return decrypted.toString('utf8');
+        const result = decrypted.toString('utf8');
+        
+        console.log('✅ Decryption successful:', {
+            outputLength: result.length,
+            isValidJson: result.startsWith('{') && result.endsWith('}')
+        });
+        
+        return result;
     } catch (error) {
         console.error("Decryption failed:", error);
+        
+        // Log more details for debugging
+        if (error instanceof Error) {
+            console.error("Error details:", {
+                name: error.name,
+                message: error.message,
+                stack: error.stack?.split('\n')[0]
+            });
+        }
+        
         return null;
+    }
+}
+
+// Utility function to test encryption/decryption
+export function testEncryption(testData: string = '{"test":true,"timestamp":' + Date.now() + '}'): boolean {
+    try {
+        console.log('🧪 Testing encryption/decryption...');
+        const encrypted = encrypt(testData);
+        const decrypted = decrypt(encrypted);
+        
+        const success = decrypted === testData;
+        console.log('🧪 Test result:', {
+            success,
+            originalLength: testData.length,
+            encryptedLength: encrypted.length,
+            decryptedLength: decrypted?.length || 0
+        });
+        
+        return success;
+    } catch (error) {
+        console.error('🧪 Test failed:', error);
+        return false;
     }
 }
 

@@ -4,7 +4,7 @@ import { createPresignedPost } from "@aws-sdk/s3-presigned-post";
 import { S3Client, ListObjectsV2Command, GetObjectCommand, DeleteObjectCommand, PutObjectCommand, DeleteObjectsCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { randomUUID } from "crypto";
-import { encrypt } from "@/lib/crypto";
+import { decrypt, encrypt } from "@/lib/crypto";
 
 export interface S3Item {
     name: string;
@@ -243,7 +243,7 @@ export async function getShareableLink(path: string, expiresIn: number = 3600): 
     }
 }
 
-export async function createMaskedShareableLink(path: string, expiresIn: number): Promise<{ success?: { url: string }; failure?: string }> {
+export async function createMaskedShareableLink(path: string, expiresIn: number): Promise<{ success?: { url: string; debug?: any }; failure?: string }> {
     console.log('🔗 Creating masked shareable link for:', path);
     
     // Check environment variables with detailed logging
@@ -293,20 +293,69 @@ export async function createMaskedShareableLink(path: string, expiresIn: number)
 
     try {
         const expiresAt = Date.now() + expiresIn * 1000;
-        const payload = JSON.stringify({ path, expiresAt });
+        const payload = JSON.stringify({ 
+            path, 
+            expiresAt,
+            createdAt: Date.now(),
+            version: 1 // for future compatibility
+        });
         
-        console.log('🔐 Encrypting payload:', {
+        console.log('🔐 Creating payload:', {
             payloadLength: payload.length,
-            expiresAt: new Date(expiresAt).toISOString()
+            expiresAt: new Date(expiresAt).toISOString(),
+            path: path.substring(0, 50) + '...'
         });
         
         const encryptedPayload = encrypt(payload);
-        console.log('✅ Encryption successful, payload length:', encryptedPayload.length);
+        console.log('✅ Encryption successful:', {
+            encryptedLength: encryptedPayload.length,
+            hasUrlUnsafeChars: /[+/=]/.test(encryptedPayload)
+        });
+        
+        // Test decryption immediately to ensure it works
+        const testDecrypt = decrypt(encryptedPayload);
+        if (!testDecrypt) {
+            console.error('❌ Immediate decryption test failed');
+            return { failure: "Link generation failed: encryption test failed" };
+        }
+        
+        let testParsed;
+        try {
+            testParsed = JSON.parse(testDecrypt);
+        } catch (e) {
+            console.error('❌ Immediate JSON parse test failed');
+            return { failure: "Link generation failed: payload format test failed" };
+        }
+        
+        console.log('✅ Immediate validation passed:', {
+            decryptedLength: testDecrypt.length,
+            parsedCorrectly: !!testParsed.path && !!testParsed.expiresAt
+        });
         
         const finalUrl = `${cleanAppUrl}/share/${encryptedPayload}`;
-        console.log('🎉 Generated masked link successfully');
         
-        return { success: { url: finalUrl } };
+        // Validate final URL length (some platforms have limits)
+        if (finalUrl.length > 2048) {
+            console.warn('⚠️  Generated URL is very long:', finalUrl.length);
+        }
+        
+        console.log('🎉 Generated masked link successfully:', {
+            urlLength: finalUrl.length,
+            domain: cleanAppUrl,
+            payloadLength: encryptedPayload.length
+        });
+        
+        return { 
+            success: { 
+                url: finalUrl,
+                debug: process.env.NODE_ENV === 'development' ? {
+                    payloadLength: encryptedPayload.length,
+                    urlLength: finalUrl.length,
+                    expiresAt: new Date(expiresAt).toISOString(),
+                    encryptedPayload: encryptedPayload.substring(0, 50) + '...'
+                } : undefined
+            } 
+        };
     } catch (error) {
         console.error("❌ Error creating masked shareable link:", error);
         
@@ -321,6 +370,24 @@ export async function createMaskedShareableLink(path: string, expiresIn: number)
         }
         
         return { failure: `Could not create masked shareable link: ${error instanceof Error ? error.message : 'Unknown error'}` };
+    }
+}
+
+// Helper function to test a specific encrypted payload
+export async function testDecryptPayload(encryptedPayload: string): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+        const decrypted = decrypt(encryptedPayload);
+        if (!decrypted) {
+            return { success: false, error: 'Decryption returned null' };
+        }
+        
+        const parsed = JSON.parse(decrypted);
+        return { success: true, data: parsed };
+    } catch (error) {
+        return { 
+            success: false, 
+            error: error instanceof Error ? error.message : 'Unknown error' 
+        };
     }
 }
 
