@@ -93,13 +93,18 @@ export async function listFiles(): Promise<{ success?: S3File[], failure?: strin
   
     try {
       const { Contents } = await client.send(command);
-      if (!Contents || Contents.length <= 1) { 
+      if (!Contents) {
+        return { success: [] };
+      }
+      
+      const fileObjects = Contents.filter(item => item.Size && item.Size > 0);
+
+      if (fileObjects.length === 0) {
         return { success: [] };
       }
   
       const files = await Promise.all(
-        Contents
-          .filter(item => item.Size && item.Size > 0)
+        fileObjects
           .map(async (item): Promise<S3File> => {
             const getObjectCommand = new GetObjectCommand({
               Bucket: process.env.AWS_BUCKET,
