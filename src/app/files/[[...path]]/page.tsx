@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { useParams } from 'next/navigation';
 import { listFiles, S3Item, createFolder } from "@/app/actions";
 import { useToast } from "@/hooks/use-toast";
 import { AuthModal } from "@/components/auth-modal";
@@ -14,7 +15,8 @@ import { CreateFolderDialog } from "@/components/create-folder-dialog";
 
 const AUTH_KEY = "pakde-dosen-auth-v1";
 
-export default function FilesPage({ params }: { params: { path?: string[] } }) {
+export default function FilesPage() {
+  const params = useParams<{ path?: string[] }>();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAuthChecked, setIsAuthChecked] = useState(false);
   const [items, setItems] = useState<S3Item[]>([]);
