@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -33,6 +34,7 @@ import type { S3Item } from "@/app/actions";
 import { deleteItem, getShareableLink } from "@/app/actions";
 import { format } from "date-fns";
 import { PreviewModal } from "@/components/preview-modal";
+import { ShareLinkDialog } from "./share-link-dialog";
 
 interface FileDataTableProps {
   data: S3Item[];
@@ -55,10 +57,10 @@ export function FileDataTable({ data, onActionSuccess }: FileDataTableProps) {
     const router = useRouter();
     const { toast } = useToast();
     const [isDeleting, setIsDeleting] = useState<string | null>(null);
-    const [isLinking, setIsLinking] = useState<string | null>(null);
     const [selectedFile, setSelectedFile] = useState<S3Item | null>(null);
     const [deleteAlertOpen, setDeleteAlertOpen] = useState(false);
     const [itemToDelete, setItemToDelete] = useState<S3Item | null>(null);
+    const [itemToShare, setItemToShare] = useState<S3Item | null>(null);
 
     const handleDeleteClick = (item: S3Item) => {
         setItemToDelete(item);
@@ -81,22 +83,12 @@ export function FileDataTable({ data, onActionSuccess }: FileDataTableProps) {
         setDeleteAlertOpen(false);
     };
 
-    const handleGetLink = async (item: S3Item) => {
-        setIsLinking(item.path);
+    const handleShareClick = (item: S3Item) => {
         if (item.isFolder) {
             toast({ title: "Not supported", description: "Cannot create a shareable link for a folder.", variant: "destructive" });
-            setIsLinking(null);
             return;
         }
-
-        const result = await getShareableLink(item.path);
-        if (result.success) {
-            await navigator.clipboard.writeText(result.success.url);
-            toast({ title: "Link Copied", description: "Shareable link has been copied to your clipboard." });
-        } else {
-            toast({ title: "Error", description: result.failure, variant: "destructive" });
-        }
-        setIsLinking(null);
+        setItemToShare(item);
     };
 
     const handleRowClick = async (item: S3Item) => {
@@ -164,8 +156,8 @@ export function FileDataTable({ data, onActionSuccess }: FileDataTableProps) {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
                         {!item.isFolder && (
-                            <DropdownMenuItem onClick={() => handleGetLink(item)} disabled={isLinking === item.path}>
-                                {isLinking === item.path ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LinkIcon className="mr-2 h-4 w-4" />}
+                            <DropdownMenuItem onClick={() => handleShareClick(item)}>
+                                <LinkIcon className="mr-2 h-4 w-4" />
                                 Get link
                             </DropdownMenuItem>
                         )}
@@ -221,6 +213,16 @@ export function FileDataTable({ data, onActionSuccess }: FileDataTableProps) {
               </AlertDialogFooter>
           </AlertDialogContent>
       </AlertDialog>
+
+      <ShareLinkDialog
+        item={itemToShare}
+        open={!!itemToShare}
+        onOpenChange={(isOpen) => {
+            if (!isOpen) {
+                setItemToShare(null);
+            }
+        }}
+      />
     </>
   );
 }

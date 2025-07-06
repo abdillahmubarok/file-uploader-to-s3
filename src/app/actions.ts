@@ -212,10 +212,15 @@ export async function deleteItem(path: string, isFolder: boolean): Promise<{ suc
     }
 }
 
-export async function getShareableLink(path: string): Promise<{ success?: { url: string }, failure?: string }> {
+export async function getShareableLink(path: string, expiresIn: number = 3600): Promise<{ success?: { url: string }, failure?: string }> {
     if (!process.env.AWS_BUCKET) {
       return { failure: "AWS_BUCKET environment variable not set." };
     }
+
+    if (expiresIn <= 0 || expiresIn > 604800) { // Max 7 days
+        return { failure: "Expiration time must be between 1 second and 7 days." };
+    }
+
     const client = new S3Client({
         region: process.env.AWS_DEFAULT_REGION ?? "ap-southeast-3",
         credentials: {
@@ -230,7 +235,7 @@ export async function getShareableLink(path: string): Promise<{ success?: { url:
     });
 
     try {
-        const url = await getSignedUrl(client, command, { expiresIn: 3600 }); // Link expires in 1 hour
+        const url = await getSignedUrl(client, command, { expiresIn });
         return { success: { url } };
     } catch (error) {
         console.error("Error getting shareable link:", error);
